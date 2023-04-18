@@ -68,12 +68,12 @@ const ChatForm = () => {
               id="message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow appearance-none border border-gray-300 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-blue-500"
             />
           </div>
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
           >
             Send
           </button>
@@ -83,7 +83,7 @@ const ChatForm = () => {
         {responses.map((response, index) => (
           <div
             key={index}
-            className={`mb-2 p-3 rounded ${response.type === 'user' ? 'bg-blue-200' : 'bg-gray-300'
+            className={`mb-2 p-3 rounded ${response.type === 'user' ? 'bg-blue-100 border border-blue-300' : 'bg-gray-100 border border-gray-300'
               }`}
           >
             {response.text}
