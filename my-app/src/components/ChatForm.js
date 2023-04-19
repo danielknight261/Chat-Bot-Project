@@ -1,13 +1,20 @@
+// Import necessary dependencies:
+// - React hooks: useState, useEffect, useRef
+// - Axios for making API requests
+// - Tailwind CSS for styling
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 
+// Define ChatForm functional component
 const ChatForm = () => {
+  // Declare state variables using useState hook
   const [message, setMessage] = useState('');
   const [responses, setResponses] = useState([]);
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
   const chatContainerRef = useRef(null);
 
+  // Function to simulate typing effect for the assistant's response
   const typeAssistantResponse = async (assistantResponse) => {
     setIsAssistantTyping(true);
     let typedResponse = '';
@@ -22,6 +29,7 @@ const ChatForm = () => {
     setIsAssistantTyping(false);
   };
 
+  // Function to get assistant's response from OpenAI API
   const getAssistantResponse = async (userMessage) => {
     try {
       const response = await axios.post(
@@ -48,20 +56,25 @@ const ChatForm = () => {
     }
   };
 
+  // useEffect to scroll the chat container to the bottom when responses change
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [responses]);
 
+  // Function to handle form submission and manage conversation flow
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Ignore empty messages
     if (!message.trim()) return;
 
+    // Add user message to responses
     setResponses((prevResponses) => [...prevResponses, { type: 'user', text: message }]);
     setMessage('');
 
+    // Get assistant response and display it with typing effect
     const assistantResponse = await getAssistantResponse(message);
     setResponses((prevResponses) => [
       ...prevResponses,
@@ -70,6 +83,7 @@ const ChatForm = () => {
     await typeAssistantResponse(assistantResponse);
   };
 
+  // Render the ChatForm component
   return (
     <div className="flex flex-col h-screen">
       <div className="mt-4 overflow-auto">
