@@ -1,29 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 
 const ChatForm = () => {
   const [message, setMessage] = useState('');
   const [responses, setResponses] = useState([]);
+  const [isAssistantTyping, setIsAssistantTyping] = useState(false);
+  const chatContainerRef = useRef(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const typeAssistantResponse = async (assistantResponse) => {
+    setIsAssistantTyping(true);
+    let typedResponse = '';
+    for (const char of assistantResponse) {
+      typedResponse += char;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      setResponses((prevResponses) => [
+        ...prevResponses.slice(0, -1),
+        { type: 'assistant', text: typedResponse },
+      ]);
+    }
+    setIsAssistantTyping(false);
+  };
 
-    if (!message.trim()) return;
-
-    setResponses((prevResponses) => [...prevResponses, { type: 'user', text: message }]);
-    setMessage('');
-
+  const getAssistantResponse = async (userMessage) => {
     try {
-      console.log('API Key:', process.env.REACT_APP_OPENAI_API_KEY);
       const response = await axios.post(
-        'https://api.openai.com/v1/engines/text-davinci-002/completions',
+        'https://api.openai.com/v1/engines/text-davinci-003/completions',
         {
-          prompt: `User: ${message}\nAssistant:`,
-          max_tokens: 100,
-          num: 1,
-          stop: null,
-          temperature: 0.8,
+          prompt: `User: ${userMessage}\nAssistant:`,
+          max_tokens: 200,
+          n: 1,
+          stop: ["\n"],
+          temperature: 0.6,
         },
         {
           headers: {
@@ -33,31 +41,50 @@ const ChatForm = () => {
         }
       );
 
-      const assistantResponse = response.data.choices[0].text.trim();
-      setResponses((prevResponses) => [
-        ...prevResponses,
-        { type: 'assistant', text: assistantResponse },
-      ]);
+      return response.data.choices[0].text.trim();
     } catch (error) {
-      if (error.response) {
-        console.error('Error status:', error.response.status);
-        console.error('Error data:', error.response.data);
-
-        if (error.response.status === 429) {
-          setResponses((prevResponses) => [
-            ...prevResponses,
-            { type: 'assistant', text: 'The API rate limit has been reached. Please wait and try again later.' },
-          ]);
-        }
-      } else {
-        console.error('Error connecting to OpenAI API:', error);
-      }
+      console.error('Error connecting to OpenAI API:', error);
+      return 'An error occurred while connecting to the API.';
     }
   };
 
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [responses]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!message.trim()) return;
+
+    setResponses((prevResponses) => [...prevResponses, { type: 'user', text: message }]);
+    setMessage('');
+
+    const assistantResponse = await getAssistantResponse(message);
+    setResponses((prevResponses) => [
+      ...prevResponses,
+      { type: 'assistant', text: '' },
+    ]);
+    await typeAssistantResponse(assistantResponse);
+  };
+
   return (
-    <div className="w-full max-w-md mx-auto mt-10">
-      <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <div className="flex flex-col h-screen">
+      <div className="mt-4 overflow-auto">
+        {responses.map((response, index) => (
+          <div
+            key={index}
+            className={`mb-2 p-3 rounded ${
+              response.type === 'user' ? 'bg-blue-100 border border-blue-300' : 'bg-gray-100 border border-gray-300'
+            }`}
+          >
+            {response.text}
+          </div>
+        ))}
+      </div>
+      <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-auto mb-4 w-2/5 mx-auto">
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="message" className="block text-gray-700 text-sm font-bold mb-2">
@@ -78,17 +105,6 @@ const ChatForm = () => {
             Send
           </button>
         </form>
-      </div>
-      <div className="mt-4">
-        {responses.map((response, index) => (
-          <div
-            key={index}
-            className={`mb-2 p-3 rounded ${response.type === 'user' ? 'bg-blue-100 border border-blue-300' : 'bg-gray-100 border border-gray-300'
-              }`}
-          >
-            {response.text}
-          </div>
-        ))}
       </div>
     </div>
   );
